@@ -1,0 +1,37 @@
+# Không push thư mục chứa các package đã cài
+node_modules/
+
+# Không push file log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Không push các file môi trường (thường chứa thông tin bí mật)
+.env
+.env.local
+.env.*.local
+
+# Không push thư mục build/output (nếu có)
+dist/
+build/
+
+# Thư mục cache
+.cache/
+.tmp/
+temp/
+
+# MacOS
+.DS_Store
+
+# VSCode config cá nhân
+.vscode/
+
+# Nếu dùng PM2 để chạy app
+pids
+logs
+
+# Nếu dùng các thư viện testing
+coverage/
+
+# Nếu dùng TypeScript
+*.tsbuildinfo
