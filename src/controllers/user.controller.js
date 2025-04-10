@@ -24,6 +24,24 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
+exports.deleteProfile = async (req, res ,next) => {
+  try {
+    const user = await userService.deleteUser(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa người dùng thành công',
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 exports.updateSocketId = async (req, res, next) => {
   try {
     const user = await userService.updateSocketId(

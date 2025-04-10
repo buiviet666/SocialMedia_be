@@ -101,7 +101,7 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
   
-  // Tạo phương thức để lấy thông tin public (không bao gồm password)
+// Tạo phương thức để lấy thông tin public (không bao gồm password)
 UserSchema.methods.getPublicProfile = function() {
     const user = this.toObject();
     delete user.password;

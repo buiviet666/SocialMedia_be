@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
+const Token = require('../models/Token.model');
 
 // Tạo token JWT
 const generateToken = (payload, expiresIn = '30d') => {
@@ -15,6 +16,46 @@ const verifyToken = (token) => {
   } catch (error) {
     throw new Error('Token không hợp lệ hoặc đã hết hạn');
   }
+};
+
+const generateRefreshToken = async (userId) => {
+  const expiresIn = '30d';
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 ngày
+
+  const token = generateToken({ userId }, expiresIn);
+
+  await Token.create({
+    user: userId,
+    token,
+    type: 'refresh',
+    expiresAt
+  });
+
+  return token;
+};
+
+// Làm mới accessToken từ refreshToken
+const refreshAccessToken = async (refreshToken) => {
+  const decoded = verifyToken(refreshToken);
+
+  const tokenDoc = await Token.findOne({
+    token: refreshToken,
+    user: decoded.userId,
+    type: 'refresh',
+    blacklisted: false,
+  });
+
+  if (!tokenDoc) {
+    throw new Error('Refresh token không hợp lệ');
+  }
+
+  // Tạo accessToken mới
+  return generateToken({ userId: decoded.userId }, '1h');
+};
+
+// Xoá refreshToken khi logout
+const removeRefreshToken = async (refreshToken) => {
+  await Token.findOneAndDelete({ token: refreshToken, type: 'refresh' });
 };
 
 // Middleware xác thực JWT
@@ -76,5 +117,8 @@ module.exports = {
   generateToken,
   verifyToken,
   protect,
-  authorize
+  authorize,
+  generateRefreshToken,
+  refreshAccessToken,
+  removeRefreshToken
 };

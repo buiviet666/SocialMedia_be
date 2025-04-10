@@ -7,7 +7,8 @@ const validate = require('../validations/user.validation');
 // Protected routes (require authentication)
 router.use(authMiddleware);
 
-router.get('/profile', userController.getProfile);
+// trang ca nhan
+router.delete('/profile', userController.deleteProfile);
 router.put('/profile', validate.updateProfile, userController.updateProfile);
 router.put('/socket', userController.updateSocketId);
 
