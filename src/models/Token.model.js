@@ -12,8 +12,9 @@ const TokenSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['access', 'refresh', 'reset-password', 'verify-email'],
-        default: 'refresh',
+        enum: ['REFRESH', 'RESET_PASSWORD', 'VERIFY_EMAIL'],
+        required: true,
+        // default: 'REFRESH',
     },
     createdAt: {
         type: Date,

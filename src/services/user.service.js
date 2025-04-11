@@ -1,5 +1,6 @@
 const User = require('../models/User.model');
-const { generateToken, generateRefreshToken } = require('./jwt.service');
+const emailService  = require('./email.service');
+const { generateToken, generateRefreshToken, generateVerifyEmailToken, verifyEmailToken, removeToken, generateResetPasswordToken, verifyResetPasswordToken } = require('./jwt.service');
 
 class UserService {
   async createUser(userData) {
@@ -60,6 +61,55 @@ class UserService {
       accessToken,
       refreshToken
     };
+  }
+
+  async changePassword(userId, currentPassword, newPassword) {
+    const user = await User.findById(userId).select('+password');
+    if (!user) throw new Error('Người dùng không tồn tại');
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) throw new Error('Mật khẩu không đúng!');
+
+    user.password = newPassword;
+    await user.save();
+  }
+
+  async sendVerificationEmail(userId, email) {
+    const token = await generateVerifyEmailToken(userId);
+
+    await emailService.sendVerificationEmail(email, token);
+  }
+
+  async verifyEmail(token) {
+    const tokenDoc = await verifyEmailToken(token);
+    const user = await User.findById(tokenDoc.user);
+
+    if (!user) throw new Error('Người dùng không tồn tại');
+
+    user.statusAcc = 'ACTIVE';
+    await user.save();
+    await tokenDoc.deleteOne();
+  }
+
+  async requestResetPassword(email) {
+    const user = await User.findOne({ emailAddress: email });
+    
+    if (!user) throw new Error('Email không tồn tại');
+
+    const token = await generateResetPasswordToken(user._id);
+    await emailService.sendResetPasswordEmail(user.emailAddress, token);
+  }
+
+  async resetPassword(token, newPassword) {
+    const { userId } = await verifyResetPasswordToken(token);
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Người dùng không tồn tại');
+
+    user.password = newPassword;
+    await user.save();
+
+    await removeToken(token);
   }
 
   async updateSocketId(userId, socketId) {

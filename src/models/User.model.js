@@ -68,8 +68,8 @@ const UserSchema = new mongoose.Schema({
     },
     statusAcc: {
         type: String,
-        enum: ['Hoạt động', 'không hoạt động'],
-        default: 'Hoạt động'
+        enum: ['ACTIVE', 'NOACTIVE'],
+        default: 'NOACTIVE'
     },
     lastLogin: {
         type: Date

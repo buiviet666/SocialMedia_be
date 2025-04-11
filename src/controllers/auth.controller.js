@@ -58,3 +58,79 @@ exports.logout = async (req, res, next) => {
     next(error);
   }
 };
+
+// doi mat khau
+exports.changePassword = async (res, req, next) => {
+  try {
+    const userId = req.user._id;
+    const {currentPassword, newPassword} = req.body;
+
+    await userService.changePassword(userId, currentPassword, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    })
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+exports.sendVerificationEmail = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    console.log("req.user", req.user);
+    
+    const email = req.user.emailAddress;
+
+    await userService.sendVerificationEmail(userId, email);
+
+    res.status(200).json({
+      success: true,
+      message: 'Email xác thực đã được gửi'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    await userService.verifyEmail(token);
+
+    res.status(200).json({
+      success: true,
+      message: 'Xác thực email thành công'
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const {email} = req.body;
+    await userService.requestResetPassword(email);
+
+    res.json({ success: true, message: 'Đã gửi email đặt lại mật khẩu' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+    await userService.resetPassword(token, newPassword);
+
+    res.json({ success: true, message: 'Đặt lại mật khẩu thành công' });
+  } catch (error) {
+    next(error);
+  }
+}

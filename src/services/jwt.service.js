@@ -27,11 +27,79 @@ const generateRefreshToken = async (userId) => {
   await Token.create({
     user: userId,
     token,
-    type: 'refresh',
+    type: 'REFRESH',
     expiresAt
   });
 
   return token;
+};
+
+const generateVerifyEmailToken = async (userId) => {
+  const expiresIn = '1h';
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  const token = generateToken({ userId }, expiresIn);
+  await Token.create({
+    user: userId,
+    token,
+    type: 'VERIFY_EMAIL',
+    expiresAt
+  });
+
+  return token;
+}
+
+// Xác thực token xác minh email
+const verifyEmailToken = async (token) => {
+  const decoded = verifyToken(token);
+
+  const tokenDoc = await Token.findOne({
+    token,
+    user: decoded.userId,
+    type: 'VERIFY_EMAIL',
+  });
+
+  if (!tokenDoc) {
+    throw new Error('Token xác thực email không hợp lệ hoặc đã hết hạn');
+  }
+
+  return tokenDoc;
+};
+
+// Xoá token bất kỳ
+const removeToken = async (token) => {
+  await Token.findOneAndDelete({ token });
+};
+
+const generateResetPasswordToken = async (userId) => {
+  const expiresIn = '1h';
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const token = generateToken({ userId }, expiresIn);
+
+  await Token.create({
+    user: userId,
+    token,
+    type: 'RESET_PASSWORD',
+    expiresAt
+  });
+
+  return token;
+};
+
+const verifyResetPasswordToken = async (token) => {
+  const decoded = verifyToken(token);
+
+  const tokenDoc = await Token.findOne({
+    token,
+    user: decoded.userId,
+    type: 'RESET_PASSWORD',
+  });
+
+  if (!tokenDoc) {
+    throw new Error('Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn');
+  }
+
+  return decoded;
 };
 
 // Làm mới accessToken từ refreshToken
@@ -41,7 +109,7 @@ const refreshAccessToken = async (refreshToken) => {
   const tokenDoc = await Token.findOne({
     token: refreshToken,
     user: decoded.userId,
-    type: 'refresh',
+    type: 'REFRESH',
     blacklisted: false,
   });
 
@@ -55,7 +123,7 @@ const refreshAccessToken = async (refreshToken) => {
 
 // Xoá refreshToken khi logout
 const removeRefreshToken = async (refreshToken) => {
-  await Token.findOneAndDelete({ token: refreshToken, type: 'refresh' });
+  await Token.findOneAndDelete({ token: refreshToken, type: 'REFRESH' });
 };
 
 // Middleware xác thực JWT
@@ -120,5 +188,10 @@ module.exports = {
   authorize,
   generateRefreshToken,
   refreshAccessToken,
-  removeRefreshToken
+  removeRefreshToken,
+  generateVerifyEmailToken,
+  verifyEmailToken,
+  removeToken,
+  generateResetPasswordToken,
+  verifyResetPasswordToken
 };
