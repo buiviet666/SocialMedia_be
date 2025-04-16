@@ -22,7 +22,11 @@ exports.login = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: { user, accessToken, refreshToken }
+      data: {
+        user,
+        accessToken,
+        refreshToken,
+      },
     });
   } catch (error) {
     next(error);
@@ -32,12 +36,16 @@ exports.login = async (req, res, next) => {
 // Làm mới accessToken
 exports.refreshToken = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.body; 
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Không có refreshToken' });
+    }
+
     const accessToken = await tokenService.refreshAccessToken(refreshToken);
 
     res.status(200).json({
       success: true,
-      data: { accessToken }
+      data: { accessToken },
     });
   } catch (error) {
     next(error);
@@ -48,33 +56,35 @@ exports.refreshToken = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, message: "Không tìm thấy refresh token" });
+    }
+
     await tokenService.removeRefreshToken(refreshToken);
 
-    res.status(200).json({
-      success: true,
-      message: 'Đăng xuất thành công'
-    });
+    res.json({ success: true, message: "Đăng xuất thành công" });
   } catch (error) {
     next(error);
   }
 };
 
 // doi mat khau
-exports.changePassword = async (res, req, next) => {
+exports.changePassword = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const {currentPassword, newPassword} = req.body;
+    const { currentPassword, newPassword } = req.body;
 
     await userService.changePassword(userId, currentPassword, newPassword);
 
     res.status(200).json({
       success: true,
       message: 'Đổi mật khẩu thành công'
-    })
+    });
   } catch (error) {
     next(error);
   }
-}
+};
 
 
 exports.sendVerificationEmail = async (req, res, next) => {
