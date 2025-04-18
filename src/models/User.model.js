@@ -77,7 +77,17 @@ const UserSchema = new mongoose.Schema({
     socketId: {
         type: String,
         default: null
-    }
+    },
+    savedPosts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+        default: []
+    }],
+    likedPosts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+        default: []
+    }]
 }, {
     toJSON: {virtuals: true},
     toObject: {virtuals: true}

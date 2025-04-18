@@ -13,8 +13,8 @@ connectDB(MONGO_URI);
 const app = express();
 
 const corsOptions = {
-    origin: 'http://localhost:5173',  // Chỉ định frontend cho phép gửi yêu cầu
-    credentials: true,  // Cho phép gửi cookie và credentials
+    origin: 'http://localhost:5173',
+    credentials: true,
 };
 
 app.use(express.json());
