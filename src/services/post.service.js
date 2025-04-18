@@ -1,4 +1,5 @@
 const Post = require('../models/Post.model');
+const User = require('../models/User.model');
 
 class PostService {
     async createPost(userId, postData, photoData) {
@@ -11,14 +12,13 @@ class PostService {
         return newPost;
     };
 
-    async getAllPost() {
-        return await Post.find()
+    async getAllPostPublic() {
+        return await Post.find({privacy: "PUBLIC"})
         .populate('userId', 'userName avatar')
         .sort({createdAt: -1});
     };
 
-    // lay thong tin bai viet cua nguoi dung
-    async getPostByUser(userId) {
+    async getPostByUserId(userId) {
         return await Post.find({
             userId
         })
@@ -26,7 +26,6 @@ class PostService {
         .sort({createdAt: -1});
     };
 
-    // lay thong tin bai viet
     async getPostById(postId) {
         return await Post.findById(postId)
         .populate('userId', 'userName avatar')
@@ -47,6 +46,67 @@ class PostService {
             userId
         });
     };
-}
+
+    async toggleLike(postId, userId) {
+        const post = await Post.findById(postId);
+        if (!post) return null;
+
+        const index = post.likes.indexOf(userId);
+        let liked = false;
+
+        if (index !== -1) {
+            post.likes.splice(index, 1);
+        } else {
+            post.likes.push(userId);
+            liked = true;
+        }
+
+        await post.save();
+        return {
+            liked,
+            totalLikes: post.likes.length
+        }
+    };
+
+    async toggleSave(userId, postId) {
+        const user = await User.findById(userId);
+        if (!user) return null;
+
+        const index = user.savedPosts.indexOf(postId);
+
+        if (index === -1) {
+            user.savedPosts.push(postId);
+            await user.save();
+            return {saved: true};
+        } else {
+            user.savedPosts.splice(index, 1);
+            await user.save();
+            return {saved: false};
+        }
+    }
+
+    async getAllSavedPosts(userId) {
+        const user = await User.findById(userId)
+        .populate({
+          path: 'savedPosts',
+          populate: {path: 'userId', select: 'userName avatar'}
+        });
+    
+        if (!user) throw new Error('Người dùng không tồn tại');
+        return user.savedPosts;
+    }
+
+    async getAllLikedPost(userId) {
+        const user = await User.findById(userId)
+        .populate({
+            path: 'likedPosts',
+            populate: {path: 'userId', select: 'userName avatar'}
+        });
+
+        if (!user) throw new Error('Người dùng không tồn tại');
+
+        return user.likedPost;
+    }
+};
 
 module.exports = new PostService();

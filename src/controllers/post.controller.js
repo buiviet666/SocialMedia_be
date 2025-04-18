@@ -23,8 +23,22 @@ exports.createPost = async (req, res, next) => {
 
 exports.getPosts = async (req, res, next) => {
     try {
-        const posts = await postService.getAllPost();
+        const posts = await postService.getAllPostPublic();
         res.json({success: true, data: posts});
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.getPostByUserId = async (req, res, next) => {
+    try {
+        const {userId} = req.parmas;
+        const posts = await postService.getPostByUserId(userId);
+
+        res.json({
+            success: true,
+            data: posts
+        });
     } catch (error) {
         next(error);
     }
@@ -66,3 +80,63 @@ exports.deletePost = async (req, res, next) => {
         next(error);
     }
 }
+
+exports.likePost = async (req, res, next) => {
+    try {
+        const { postId } = req.body;
+        const userId = req.user._id;
+
+        const result = await postService.toggleLike(postId, userId);
+        if (!result) return res.status(404).json({message: 'Không tìm thấy bài viết'});
+
+        res.json({
+            success: true,
+            message: result.liked ? 'Like' : 'unLike',
+            data: result
+        });
+    } catch (error) {
+        next(next);
+    }
+};
+
+exports.savePost = async (req, res, next) => {
+    try {
+        const {postId} = req.body;
+        if (!postId) return res.status(400).json({ message: 'postId là bắt buộc' });
+
+        const result = await postService.toggleSave(req.user._id, postId);
+
+        res.json({
+            success: true,
+            message: result.saved ? 'Save' : 'unSave',
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+exports.getAllPostSaved = async (req, res, next) => {
+    try {
+        const posts = await postService.getAllSavedPosts(req.user._id);
+
+        res.json({
+            success: true,
+            data: posts
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+exports.getAllPostLiked = async (req, res, next) => {
+    try {
+        const posts = await postService.getAllLikedPost(req.user._id);
+
+        res.json({
+            success: true,
+            data: posts
+        });
+    } catch (error) {
+        next(error);
+    }
+};
