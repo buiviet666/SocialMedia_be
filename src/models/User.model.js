@@ -120,7 +120,6 @@ UserSchema.methods.getPublicProfile = function() {
 
 // Index cho các trường thường xuyên query
 UserSchema.index({ username: 1 });
-UserSchema.index({ emailAddress: 1 });
 UserSchema.index({ statusAcc: 1 });
 
 module.exports = mongoose.model('User', UserSchema);
