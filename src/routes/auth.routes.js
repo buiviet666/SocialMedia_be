@@ -9,7 +9,7 @@ const {protect} = require('../services/jwt.service');
 router.post('/register', validate.register, authController.register); // done
 router.post('/login', validate.login, authController.login); // done
 router.post('/logout', authController.logout); // donne
-router.post('/refresh', authController.refreshToken);
+router.post('/resetAccessToken', authController.resetAccessToken); // done
 router.get('/profile', userController.getProfile); // check lại
 
 // email

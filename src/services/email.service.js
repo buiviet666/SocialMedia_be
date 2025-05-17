@@ -1,5 +1,6 @@
 const sgMail = require('@sendgrid/mail');
 const dotenv = require("dotenv");
+const AppError = require('../utils/appError');
 
 dotenv.config();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -44,10 +45,7 @@ const sendVerificationEmail = async (toEmail, token) => {
 
     await sgMail.send(mailOptions);
   } catch (error) {
-    res.status(400).json({
-      statusCode: 400,
-      message: error || 'Error sending verification email',
-    })
+    throw new AppError(error || 'Error sending verification email', 400);
   }
 };
 

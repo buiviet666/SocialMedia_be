@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
 const Token = require('../models/Token.model');
+const AppError = require('../utils/appError');
 
 // create token JWT
 const generateToken = (payload, expiresIn = '30d') => {
@@ -28,8 +29,8 @@ const generateRefreshToken = async (userId) => {
 
 // create verify email token 
 const generateVerifyEmailToken = async (userId) => {
-  const expiresIn = '1h';
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const expiresIn = '15m';
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   const token = generateToken({ userId }, expiresIn);
   await Token.create({
@@ -42,10 +43,10 @@ const generateVerifyEmailToken = async (userId) => {
   return token;
 };
 
-// create reset password token
+// create reset forgot password token 
 const generateResetPasswordToken = async (userId) => {
-  const expiresIn = '1h';
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const expiresIn = '15m';
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
   const token = generateToken({ userId }, expiresIn);
 
   await Token.create({
@@ -63,7 +64,7 @@ const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
-    throw new Error('Token không hợp lệ hoặc đã hết hạn');
+    throw new AppError('Token is invalid or expired', 400);
   }
 };
 
@@ -78,7 +79,7 @@ const verifyEmailToken = async (token) => {
   });
 
   if (!tokenDoc) {
-    throw new Error('Token xác thực email không hợp lệ hoặc đã hết hạn');
+    throw new AppError('Email authentication token is invalid or expired', 400);
   }
 
   return tokenDoc;
@@ -92,10 +93,11 @@ const verifyResetPasswordToken = async (token) => {
     token,
     user: decoded.userId,
     type: 'RESET_PASSWORD',
+    expiresAt: { $gt: new Date() },
   });
 
   if (!tokenDoc) {
-    throw new Error('Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn');
+    throw new AppError('Password reset token is invalid or expired', 401);
   }
 
   return decoded;
@@ -107,21 +109,34 @@ const removeToken = async (token) => {
 };
 
 // refresh access token
-const refreshAccessToken = async (refreshToken) => {
-  const decoded = verifyToken(refreshToken);
+const refreshAccessToken = async (oldRefreshToken) => {
+  let decoded = verifyToken(oldRefreshToken);
 
   const tokenDoc = await Token.findOne({
-    token: refreshToken,
+    token: oldRefreshToken,
     user: decoded.userId,
     type: 'REFRESH',
-    blacklisted: false,
+    expiresAt: { $gt: new Date() },
   });
 
   if (!tokenDoc) {
-    throw new Error('Refresh token không hợp lệ');
+    throw new AppError('Refresh token is invalid or has been revoked', 401);
   }
 
-  return generateToken({ userId: decoded.userId }, '1h');
+  await Token.deleteMany({ user: decoded.userId, type: 'REFRESH' });
+
+  const accessToken = generateToken({ userId: decoded.userId }, '1d');
+
+  const newRefreshToken = generateToken({ userId: decoded.userId }, '30d');
+
+  await Token.create({
+    token: newRefreshToken,
+    user: decoded.userId,
+    type: 'REFRESH',
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
+
+  return { accessToken, refreshToken: newRefreshToken };
 };
 
 
@@ -134,8 +149,6 @@ const removeRefreshToken = async (refreshToken) => {
 const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("authHeader", authHeader);
-    
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
@@ -145,7 +158,6 @@ const protect = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    console.log("token", token);
     
     const decoded = verifyToken(token);
     const user = await User.findById(decoded.userId).select('-password');
@@ -157,13 +169,12 @@ const protect = async (req, res, next) => {
       });
     }
     req.user = user;
-    console.log("req.user", req.user);
     
     next();
   } catch (error) {
-    res.status(401).json({
-      statusCode: 401,
-      message: error.message || 'Authorization failed'
+    return res.status(err.statusCode || 401).json({
+      statusCode: err.statusCode || 401,
+      message: err.message || 'Authorization failed',
     });
   }
 };

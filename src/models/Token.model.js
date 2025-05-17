@@ -14,23 +14,20 @@ const TokenSchema = new mongoose.Schema({
         type: String,
         enum: ['REFRESH', 'RESET_PASSWORD', 'VERIFY_EMAIL'],
         required: true,
-        // default: 'REFRESH',
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
     },
     expiresAt: {
         type: Date,
         required: true,
-    },
-    blacklisted: {
-        type: Boolean,
-        default: false,
     }
+}, {
+    timestamps: true
 });
 
-TokenSchema.index({ token: 1 });
-TokenSchema.index({ user: 1 });
+// check expires auto delete data
+TokenSchema.index({
+    expiresAt: 1
+}, {
+    expireAfterSeconds: 0
+})
 
 module.exports = mongoose.model('Token', TokenSchema);

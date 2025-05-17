@@ -60,22 +60,22 @@ exports.logout = async (req, res, next) => {
 };
 
 // reset accessToken
-exports.refreshToken = async (req, res, next) => {
+exports.resetAccessToken = async (req, res, next) => {
   try {
     const {refreshToken} = req.body;
 
     if (!refreshToken) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: "Not found refresh token"
+      return res.status(401).json({
+        statusCode: 401,
+        message: "Not found access token"
       });
     }
 
-    const accessToken = await tokenService.refreshAccessToken(refreshToken);
+    const tokens = await tokenService.refreshAccessToken(refreshToken);
 
     res.status(200).json({
       statusCode: 200,
-      data: accessToken,
+      data: tokens,
     });
   } catch (error) {
     next(error);
