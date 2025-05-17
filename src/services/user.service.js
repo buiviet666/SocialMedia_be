@@ -1,4 +1,5 @@
 const User = require('../models/User.model');
+const AppError = require('../utils/appError');
 const emailService  = require('./email.service');
 const { generateToken, generateRefreshToken, generateVerifyEmailToken, verifyEmailToken, removeToken, generateResetPasswordToken, verifyResetPasswordToken } = require('./jwt.service');
 
@@ -6,7 +7,30 @@ class UserService {
   async createUser(userData) {
     const user = new User(userData);
     await user.save();
-    return user.getPublicProfile();
+  }
+
+  async loginUser(identifier, password) {
+    const user = await User.findOne({
+      $or: [
+        { userName: identifier },
+        { emailAddress: identifier }
+      ]
+    }).select('+password');
+
+    if (!user || !(await user.comparePassword(password))) {
+      throw new AppError('Incorrect login password information!', 404);
+    }
+
+    await user.updateLastLogin();
+
+    const accessToken = generateToken({ userId: user._id }, '1h');
+    const refreshToken = await generateRefreshToken(user._id);
+
+    return {
+      user: user.getPublicProfile(),
+      accessToken,
+      refreshToken
+    };
   }
 
   async findByUsername(username) {
@@ -29,46 +53,27 @@ class UserService {
     return user ? user.getPublicProfile() : null;
   }
 
-  // xoa tai khoan
   async deleteUser(id) {
     return await User.findByIdAndDelete(id);
   }
 
-  async loginUser(identifier, password) {
-    // Cho phép đăng nhập bằng username hoặc email
-    const user = await User.findOne({
-      $or: [
-        { userName: identifier },
-        { emailAddress: identifier }
-      ]
-    }).select('+password');
-    console.log("user", user);
+  async changePasswordProcess(userId, currentPassword, newPassword) {
+    const user = await User.findById(userId).select('+password');
     
-
-    if (!user || !(await user.comparePassword(password))) {
-      throw new Error('Thông tin đăng nhập không chính xác');
+    if (!user) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User does not exist!'
+      });
     }
 
-    // if (user.statusAcc !== 'active') {
-    //   throw new Error('Tài khoản chưa được kích hoạt');
-    // }
-
-    const accessToken = generateToken({ userId: user._id }, '1h');
-    const refreshToken = await generateRefreshToken(user._id);
-
-    return {
-      user: user.getPublicProfile(),
-      accessToken,
-      refreshToken
-    };
-  }
-
-  async changePassword(userId, currentPassword, newPassword) {
-    const user = await User.findById(userId).select('+password');
-    if (!user) throw new Error('Người dùng không tồn tại');
-
     const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) throw new Error('Mật khẩu không đúng!');
+    if (!isMatch) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Password is incorrect!'
+      });
+    }
 
     user.password = newPassword;
     await user.save();
@@ -84,7 +89,12 @@ class UserService {
     const tokenDoc = await verifyEmailToken(token);
     const user = await User.findById(tokenDoc.user);
 
-    if (!user) throw new Error('Người dùng không tồn tại');
+    if (!user) {
+      res.status(401).json({
+        statusCode: 401,
+        message: 'User does not exist!'
+      })
+    };
 
     user.statusAcc = 'ACTIVE';
     await user.save();
@@ -94,7 +104,12 @@ class UserService {
   async requestResetPassword(email) {
     const user = await User.findOne({ emailAddress: email });
     
-    if (!user) throw new Error('Email không tồn tại');
+    if (!user) {
+      res.status(401).json({
+        statusCode: 401,
+        message: 'Email does not exist!'
+      })
+    };
 
     const token = await generateResetPasswordToken(user._id);
     await emailService.sendResetPasswordEmail(user.emailAddress, token);
@@ -102,13 +117,17 @@ class UserService {
 
   async resetPassword(token, newPassword) {
     const { userId } = await verifyResetPasswordToken(token);
-
     const user = await User.findById(userId);
-    if (!user) throw new Error('Người dùng không tồn tại');
+
+    if (!user) {
+      res.status(401).json({
+        statusCode: 401,
+        message: 'User does not exist!'
+      })
+    };
 
     user.password = newPassword;
     await user.save();
-
     await removeToken(token);
   }
 

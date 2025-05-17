@@ -3,34 +3,35 @@ const User = require('../models/User.model');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // Lấy token từ header
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader  = req.header('Authorization');
     
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
-        success: false,
-        message: 'Vui lòng đăng nhập để truy cập'
+        statusCode: 401,
+        message: 'Please login to access',
       });
     }
-
-    // Xác thực token
-    const decoded = verifyToken(token);
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken (token);
     
-    // Tìm user và gắn vào request
-    req.user = await User.findOne({ 
+    const user = await User.findOne({ 
       _id: decoded.userId,
-      statusAcc: 'active' // Chỉ cho phép user active
+      statusAcc: 'ACTIVE'
     }).select('-password');
 
-    if (!req.user) {
-      throw new Error('Người dùng không tồn tại hoặc chưa được kích hoạt');
+    if (!user) {
+      return res.status(403).json({
+        statusCode: 403,
+        message: 'User does not exist or is not activated',
+      })
     }
 
+    req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: error.message || 'Xác thực không thành công'
+    res.status(403).json({
+      statusCode: 403,
+      message: error.message || 'Authentication failed'
     });
   }
 };

@@ -6,18 +6,18 @@ const userController = require('../controllers/user.controller');
 const {protect} = require('../services/jwt.service');
 
 // Public routes
-router.post('/register', validate.register, authController.register);
-router.post('/login', authController.login);
-router.post('/logout', authController.logout);
+router.post('/register', validate.register, authController.register); // done
+router.post('/login', validate.login, authController.login); // done
+router.post('/logout', authController.logout); // donne
 router.post('/refresh', authController.refreshToken);
-router.get('/profile', userController.getProfile);
+router.get('/profile', userController.getProfile); // check lại
 
 // email
-router.post('/send-verification-email', protect, authController.sendVerificationEmail);
-router.get('/verify-email', authController.verifyEmail);
+router.post('/send-verification-email', protect, authController.sendVerificationEmail); // done
+router.get('/verify-email', authController.verifyEmail); // done
 
 // forgot
-router.post('/send-forgot-password', authController.forgotPassword);
-router.post('/reset-password', authController.resetPassword);
+router.post('/send-forgot-password', authController.forgotPassword); // done
+router.post('/reset-password', authController.resetPassword); // done
 
 module.exports = router;

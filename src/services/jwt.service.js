@@ -2,25 +2,17 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
 const Token = require('../models/Token.model');
 
-// Tạo token JWT
+// create token JWT
 const generateToken = (payload, expiresIn = '30d') => {
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: expiresIn
   });
 };
 
-// Xác thực token JWT
-const verifyToken = (token) => {
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET);
-  } catch (error) {
-    throw new Error('Token không hợp lệ hoặc đã hết hạn');
-  }
-};
-
+// create refresh token
 const generateRefreshToken = async (userId) => {
   const expiresIn = '30d';
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 ngày
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   const token = generateToken({ userId }, expiresIn);
 
@@ -34,6 +26,7 @@ const generateRefreshToken = async (userId) => {
   return token;
 };
 
+// create verify email token 
 const generateVerifyEmailToken = async (userId) => {
   const expiresIn = '1h';
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -47,9 +40,34 @@ const generateVerifyEmailToken = async (userId) => {
   });
 
   return token;
-}
+};
 
-// Xác thực token xác minh email
+// create reset password token
+const generateResetPasswordToken = async (userId) => {
+  const expiresIn = '1h';
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const token = generateToken({ userId }, expiresIn);
+
+  await Token.create({
+    user: userId,
+    token,
+    type: 'RESET_PASSWORD',
+    expiresAt
+  });
+
+  return token;
+};
+
+// verify token JWT
+const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    throw new Error('Token không hợp lệ hoặc đã hết hạn');
+  }
+};
+
+// verify token email
 const verifyEmailToken = async (token) => {
   const decoded = verifyToken(token);
 
@@ -66,26 +84,7 @@ const verifyEmailToken = async (token) => {
   return tokenDoc;
 };
 
-// Xoá token bất kỳ
-const removeToken = async (token) => {
-  await Token.findOneAndDelete({ token });
-};
-
-const generateResetPasswordToken = async (userId) => {
-  const expiresIn = '1h';
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-  const token = generateToken({ userId }, expiresIn);
-
-  await Token.create({
-    user: userId,
-    token,
-    type: 'RESET_PASSWORD',
-    expiresAt
-  });
-
-  return token;
-};
-
+// verify token reset password 
 const verifyResetPasswordToken = async (token) => {
   const decoded = verifyToken(token);
 
@@ -102,7 +101,12 @@ const verifyResetPasswordToken = async (token) => {
   return decoded;
 };
 
-// Làm mới accessToken từ refreshToken
+// delete token
+const removeToken = async (token) => {
+  await Token.findOneAndDelete({ token });
+};
+
+// refresh access token
 const refreshAccessToken = async (refreshToken) => {
   const decoded = verifyToken(refreshToken);
 
@@ -117,58 +121,54 @@ const refreshAccessToken = async (refreshToken) => {
     throw new Error('Refresh token không hợp lệ');
   }
 
-  // Tạo accessToken mới
   return generateToken({ userId: decoded.userId }, '1h');
 };
 
-// Xoá refreshToken khi logout
+
+// delete refresh token (logout)
 const removeRefreshToken = async (refreshToken) => {
   await Token.findOneAndDelete({ token: refreshToken, type: 'REFRESH' });
 };
 
-// Middleware xác thực JWT
+// Middleware verify JWT
 const protect = async (req, res, next) => {
-  let token;
-  
-  // Lấy token từ header
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Vui lòng đăng nhập để truy cập tài nguyên này'
-    });
-  }
-
   try {
-    // Xác thực token
-    const decoded = verifyToken(token);
-
-    // Tìm user và gắn vào request
-    req.user = await User.findById(decoded.userId).select('-password');
+    const authHeader = req.headers.authorization;
+    console.log("authHeader", authHeader);
     
-    if (!req.user) {
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
-        success: false,
-        message: 'Người dùng không tồn tại'
+        statusCode: 401,
+        message: "Please login to access this resource",
       });
     }
 
+    const token = authHeader.split(' ')[1];
+    console.log("token", token);
+    
+    const decoded = verifyToken(token);
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User does not exist'
+      });
+    }
+    req.user = user;
+    console.log("req.user", req.user);
+    
     next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: error.message || 'Phiên đăng nhập không hợp lệ'
+    res.status(401).json({
+      statusCode: 401,
+      message: error.message || 'Authorization failed'
     });
   }
 };
 
-// Kiểm tra vai trò người dùng
+// check role
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

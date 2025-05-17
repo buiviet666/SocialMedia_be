@@ -10,22 +10,22 @@ function bufferToStream(buffer) {
 
 // Upload 1 file (ảnh/video) lên Cloudinary
 exports.uploadToCloudinary = (fileBuffer, folder = 'posts', resourceType = 'image') => {
-    return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: resourceType
-        },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id
-          });
-        }
+          {
+              folder,
+              resource_type: resourceType
+          },
+          (error, result) => {
+              if (error) return reject(error);
+              resolve({
+                  url: result.secure_url,
+                  publicId: result.public_id
+              });
+          }
       );
       bufferToStream(fileBuffer).pipe(stream);
-    });
+  });
 };
 
 // Xoá ảnh/video khỏi Cloudinary bằng public_id

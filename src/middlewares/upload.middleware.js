@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 
+// check type
 const imageFilter = (req, file, cb) => {
     const allowedExts = /jpeg|jpg|png|gif/;
     const ext = path.extname(file.originalname).toLowerCase();
@@ -12,12 +13,12 @@ const imageFilter = (req, file, cb) => {
     }
 };
 
+// check size
 const limits = {
     fileSize: 5 * 1024 * 1024 // 5MB
 }
 
 const storage = multer.memoryStorage();
-
 const upload = multer({
     storage,
     fileFilter: imageFilter,

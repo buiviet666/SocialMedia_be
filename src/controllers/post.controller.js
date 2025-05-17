@@ -6,8 +6,8 @@ exports.createPost = async (req, res, next) => {
         const photoData = [];
 
         for (const file of req.files || []) {
-            const result = await uploadToCloudinary(file.path, 'posts');
-            photoData.push({url: result.secure_url, publicId: result.public_id});
+            const result = await uploadToCloudinary(file.buffer, 'posts');
+            photoData.push({url: result.url, publicId: result.publicId });
         };
 
         const post = await postService.createPost(req.user._id, req.body, photoData);

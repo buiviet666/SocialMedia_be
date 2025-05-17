@@ -14,6 +14,7 @@ exports.getProfile = async (req, res, next) => {
 
 exports.updateProfile = async (req, res, next) => {
   try {
+    const file = req.file;
     const user = await userService.updateUser(req.user._id, req.body);
     res.json({
       success: true,

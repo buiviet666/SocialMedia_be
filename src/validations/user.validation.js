@@ -1,44 +1,39 @@
-const { check, validationResult } = require('express-validator');
+const { check } = require('express-validator');
 const validator = require('validator');
+const validationResult = require('../middlewares/validate.middleware');
 
 exports.register = [
   check('userName')
-    .notEmpty().withMessage('Username là bắt buộc')
-    .isLength({ min: 6, max: 30 }).withMessage('Username phải từ 3-30 ký tự')
-    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username chỉ chứa chữ cái, số và dấu gạch dưới'),
+    .notEmpty().withMessage('Username is require')
+    .isLength({ min: 6, max: 30 }).withMessage('Username must be 6-30 characters')
+    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username must contain only letters, numbers and underscores'),
 
   check('password')
-    .notEmpty().withMessage('Mật khẩu là bắt buộc')
-    .isLength({ min: 6 }).withMessage('Mật khẩu phải có ít nhất 6 ký tự'),
+    .notEmpty().withMessage('password is require')
+    .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/).withMessage('Password must contain letters and numbers, minimum 6 characters'),
 
   check('emailAddress')
-    .notEmpty().withMessage('Email là bắt buộc')
-    .isEmail().withMessage('Email không hợp lệ'),
+    .notEmpty().withMessage('emailAddress is require')
+    .isEmail().withMessage('Invalid emailAddress')
+    .normalizeEmail(),
 
   check('phoneNumber')
-    .optional()
-    .custom(v => validator.isMobilePhone(v, 'any', { strictMode: false }))
-    .withMessage('Số điện thoại không hợp lệ'),
+    .notEmpty().withMessage('phoneNumber is require')
+    .trim()
+    .custom(v => validator.isMobilePhone(v, 'vi-VN'))
+    .withMessage('Invalid phoneNumber'),
 
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  }
+  validationResult
 ];
 
 exports.login = [
-  check('identifier').notEmpty().withMessage('Username/Email là bắt buộc'),
-  check('password').notEmpty().withMessage('Mật khẩu là bắt buộc'),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  }
+  check('identifier')
+    .notEmpty().withMessage('Username/Email is require'),
+
+  check('password')
+    .notEmpty().withMessage('password is require'),
+
+  validationResult
 ];
 
 exports.updateProfile = [

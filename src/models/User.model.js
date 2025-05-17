@@ -8,9 +8,10 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         required: true,
         trim: true,
+        lowercase: true,
         minlength: 6,
         maxlength: 30,
-        match: [/^[a-zA-Z0-9_]+$/, 'Username chỉ chứa chữ cái, số và dấu gạch dưới']
+        match: [/^[a-zA-Z0-9_]+$/, 'Username must contain only letters, numbers and underscores']
     },
     password: {
         type: String,
@@ -23,6 +24,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+        lowercase: true,
         trim: true,
         validate: {
             validator: validator.isEmail,
@@ -60,11 +62,7 @@ const UserSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: 'default-avatar.jpg'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        default: ''
     },
     statusAcc: {
         type: String,
@@ -87,12 +85,24 @@ const UserSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
         default: []
+    }],
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: []
+    }], 
+    followings: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: []
     }]
 }, {
+    timestamps: true,
     toJSON: {virtuals: true},
     toObject: {virtuals: true}
 });
 
+// check hash password
 UserSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
 
@@ -100,26 +110,22 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
-// Cập nhật lastLogin khi user đăng nhập
-UserSchema.methods.updateLastLogin = async function() {
+// Update time last Login
+UserSchema.methods.updateLastLogin = function() {
     this.lastLogin = new Date();
-    await this.save();
+    return this.save();
 };
   
-// So sánh password
-UserSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+// compare password
+UserSchema.methods.comparePassword = function(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
 };
   
-// Tạo phương thức để lấy thông tin public (không bao gồm password)
+// get info profile (hide password)
 UserSchema.methods.getPublicProfile = function() {
     const user = this.toObject();
     delete user.password;
     return user;
 };
-
-// Index cho các trường thường xuyên query
-UserSchema.index({ username: 1 });
-UserSchema.index({ statusAcc: 1 });
 
 module.exports = mongoose.model('User', UserSchema);
