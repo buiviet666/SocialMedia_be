@@ -143,6 +143,7 @@ exports.forgotPassword = async (req, res, next) => {
       message: 'Password reset password has been sent'
     });
   } catch (error) {
+    error.message = 'Email notfound!';
     next(error);
   }
 }

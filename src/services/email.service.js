@@ -51,7 +51,7 @@ const sendVerificationEmail = async (toEmail, token) => {
 
 // gui email reset password
 const sendResetPasswordEmail = async (toEmail, token) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.CLIENT_URL}/auth/reset-password?token=${token}`;
 
   const resetEmailTemplate = {
     from: "loverbee01@gmail.com",
