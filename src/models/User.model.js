@@ -28,7 +28,7 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         validate: {
             validator: validator.isEmail,
-            message: 'Email không hợp lệ'
+            message: 'Invalid email'
         }
     },
     phoneNumber: {
@@ -38,13 +38,13 @@ const UserSchema = new mongoose.Schema({
             validator: function(v) {
                 return validator.isMobilePhone(v, 'any', { strictMode: false });
             },
-            message: 'Số điện thoại không hợp lệ'
+            message: 'Invalid phone number'
         }
     },
     gender: {
         type: String,
-        enum: ['Nam', 'Nữ', 'Khác', 'Không xác định'],
-        default: 'Không xác định'
+        enum: ['Male', 'Female', 'Other', 'Unknown'],
+        default: 'Unknown'
     },
     dateOfBirth: {
         type: Date,
@@ -52,7 +52,7 @@ const UserSchema = new mongoose.Schema({
           validator: function(v) {
             return v <= new Date();
           },
-          message: 'Ngày sinh không thể ở tương lai'
+          message: 'Date of birth cannot be in the future'
         }
     },
     bio: {

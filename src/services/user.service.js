@@ -5,6 +5,11 @@ const { generateToken, generateRefreshToken, generateVerifyEmailToken, verifyEma
 
 class UserService {
   async createUser(userData) {
+    const existingUser = await User.findOne({ emailAddress: userData.emailAddress });
+    if (existingUser) {
+      throw new AppError('Email already exists', 400);
+    }
+
     const user = new User(userData);
     await user.save();
   }
