@@ -91,11 +91,20 @@ const UserSchema = new mongoose.Schema({
         ref: 'User',
         default: []
     }], 
-    followings: [{
+    following: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         default: []
-    }]
+    }],
+    role: {
+        type: String,
+        enum: ['USER', 'ADMIN'],
+        default: 'USER'
+    },
+    isOnline: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true,
     toJSON: {virtuals: true},

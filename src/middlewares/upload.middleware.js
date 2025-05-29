@@ -9,7 +9,7 @@ const imageFilter = (req, file, cb) => {
     if (allowedExts.test(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Chỉ cho phép định dạng ảnh (jpeg, jpg, png, gif)'), false);
+        cb(new Error('Only image formats allowed (jpeg, jpg, png, gif)'), false);
     }
 };
 

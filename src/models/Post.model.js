@@ -1,20 +1,11 @@
 const mongoose = require('mongoose');
 
 const PostSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        trim: true,
-        maxlength: 200
-    },
-    content: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 5000
-    },
+    title: { type: String, trim: true, maxlength: 200 },
+    content: { type: String, required: true, trim: true, maxlength: 5000 },
     privacy: {
         type: String,
-        enum: ['PUBLIC', 'FRIENDS', 'PRIVATE'],
+        enum: ['PUBLIC', 'FRIENDS', 'PRIVATE', 'FRIENDONLY', 'EXCEPTFRIEND'],
         default: 'PUBLIC'
     },
     visibilitySetting: {
@@ -30,7 +21,7 @@ const PostSchema = new mongoose.Schema({
             }]
         }, { _id: false }),
         required: function () {
-            return this.privacy === 'FRIENDS';
+            return this.privacy === 'FRIENDONLY' || this.privacy === 'EXCEPTFRIEND';
         },
         default: undefined
     },
@@ -39,25 +30,27 @@ const PostSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    location: {
-        type: String,
-        trim: true
-    },
+    location: { type: String, trim: true },
     photoUrls: [{
         url: { type: String, required: true, trim: true },
         publicId: { type: String, required: true, trim: true }
     }],
-    isEdited: {
-        type: Boolean,
-        default: false
-    },
+    isEdited: { type: Boolean, default: false },
     likes: {
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'User',
         default: []
-    }    
-},
-{
+    },
+    status: {
+        type: String,
+        enum: ['ACTIVE', 'HIDDEN'],
+        default: 'ACTIVE'
+    },
+    reportCount: {
+        type: Number,
+        default: 0
+    }
+}, {
     timestamps: true,
 });
 
