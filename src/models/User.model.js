@@ -104,7 +104,22 @@ const UserSchema = new mongoose.Schema({
     isOnline: {
         type: Boolean,
         default: false
-    }
+    },
+    nameDisplay: {
+        type: String,
+        maxlength: 500,
+        default: ''
+    },
+    avatarPublicId: {
+        type: String,
+        default: null
+    },
+    blockedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: []
+    }]
+
 }, {
     timestamps: true,
     toJSON: {virtuals: true},

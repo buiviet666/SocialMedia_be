@@ -172,9 +172,9 @@ const protect = async (req, res, next) => {
     
     next();
   } catch (error) {
-    return res.status(err.statusCode || 401).json({
-      statusCode: err.statusCode || 401,
-      message: err.message || 'Authorization failed',
+    return res.status(error.statusCode || 401).json({
+      statusCode: error.statusCode || 401,
+      message: error.message || 'Authorization failed',
     });
   }
 };

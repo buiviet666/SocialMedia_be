@@ -230,7 +230,7 @@ exports.getPostDetail = async (req, res, next) => {
     const post = await postService.getPostDetail(postId, currentUserId);
     
     if (!post) {
-        throw new AppError('No posts found', 403);
+      throw new AppError('No posts found', 403);
     }
 
     res.json({ 
@@ -260,3 +260,23 @@ exports.getPostsByUserId = async (req, res, next) => {
     next(error);
   }
 };
+
+// get likes info user
+exports.getPostLikes = async (req, res, next) => {
+  try {
+    const postId = req.params.id;
+    const users = await postService.getPostLikes(postId);
+
+    if (!users) {
+      throw new AppError('No posts found', 404);
+    }
+
+    res.json({
+      statusCode: 200,
+      message: 'Successfully!',
+      data: users 
+    });
+  } catch (error) {
+    next(error);
+  }
+}

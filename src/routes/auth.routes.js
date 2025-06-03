@@ -10,7 +10,7 @@ router.post('/register', validate.register, authController.register); // done
 router.post('/login', validate.login, authController.login); // done
 router.post('/logout', authController.logout); // donne
 router.post('/resetAccessToken', authController.resetAccessToken); // done
-router.get('/profile', userController.getProfile); // check lại
+router.get('/me', protect, userController.getCurrentUserProfile);
 
 // email
 router.post('/send-verification-email', protect, authController.sendVerificationEmail); // done

@@ -24,8 +24,13 @@ class PostService {
     async getPostsByPrivacy(type, currentUserId) {
         switch (type) {
             case 'PUBLIC':
-            return await Post.find({ privacy: 'PUBLIC' })
-                .populate('userId', 'userName avatar')
+                return await Post.find({
+                    $or: [
+                        { privacy: 'PUBLIC' },
+                        { userId: currentUserId }
+                    ]
+                })
+                .populate('userId', 'userName avatar nameDisplay')
                 .sort({ createdAt: -1 });
 
             case 'FRIENDS':
@@ -288,6 +293,15 @@ class PostService {
         });
     }
 
+    async getPostLikes(postId) {
+        const post = await Post.findById(postId).select('likes');
+        if (!post) return null;
+
+        const users = await User.find({ _id: { $in: post.likes } })
+        .select('userName nameDisplay avatar');
+
+        return users;
+    }
 
 };
 
