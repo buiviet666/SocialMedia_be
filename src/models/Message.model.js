@@ -26,6 +26,16 @@ const MessageSchema = new mongoose.Schema({
     enum: ['SENT', 'EDITED', 'DELETED'],
     default: 'SENT'
   },
+  seenBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
+  deliveredTo: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
   createdAt: {
     type: Date,
     default: Date.now

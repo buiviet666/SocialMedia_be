@@ -27,6 +27,29 @@ class ReportService {
       reason
     });
   }
+
+  async reportMessage(userId, messageId, reason) {
+    return await Report.create({
+      reporter: userId,
+      targetType: 'MESSAGE',
+      targetId: messageId,
+      reason
+    });
+  }
+
+  async createReport({ reporter, targetType, targetId, reason }) {
+    const report = await Report.create({
+      reporter,
+      targetType,
+      targetId,
+      reason,
+    });
+    return report;
+  }
+
+  async checkDuplicate(reporter, targetType, targetId) {
+    return await Report.findOne({ reporter, targetType, targetId });
+  }
 }
 
 module.exports = new ReportService();

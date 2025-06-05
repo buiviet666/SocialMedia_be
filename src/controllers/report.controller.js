@@ -35,3 +35,28 @@ exports.reportComment = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.reportMessage = async (req, res, next) => {
+  try {
+    const { messageId, reason } = req.body;
+    if (!messageId || !reason) {
+      return res.status(400).json({ message: 'Thiếu dữ liệu' });
+    }
+
+    const reporter = req.user._id;
+    const isDuplicate = await reportService.checkDuplicate(reporter, 'MESSAGE', messageId);
+    if (isDuplicate) {
+      return res.status(409).json({ message: 'Bạn đã báo cáo tin nhắn này trước đó.' });
+    }
+
+    // ✅ Dùng cùng style gọi service
+    const report = await reportService.reportMessage(reporter, messageId, reason);
+    res.status(201).json({
+      success: true,
+      message: 'Đã báo cáo tin nhắn',
+      data: report,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

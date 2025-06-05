@@ -327,9 +327,20 @@ class UserService {
 
   async getUsersByIds(ids) {
     const users = await User.find({ _id: { $in: ids } })
-      .select('_id userName nameDisplay avatar')
+      .select('_id userName nameDisplay avatar isOnline')
       .lean();
     return users;
+  }
+
+  async getFriends(userId) {
+    const user = await User.findById(userId).populate("following", "_id userName nameDisplay avatar");
+    if (!user) return [];
+
+    const friends = user.following.filter((followedUser) =>
+      user.followers.includes(followedUser._id)
+    );
+
+    return friends;
   }
 
   async updateSocketId(userId, socketId) {

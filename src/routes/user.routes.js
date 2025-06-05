@@ -24,6 +24,7 @@ router.get('/blocked', protect, userController.getBlockedUsers);
 router.get('/recommendations', protect, userController.getFriendRecommendations);
 router.delete('/me', protect, userController.deleteOwnAccount);
 router.post('/bulk', protect, userController.getUsersByIds);
+router.get("/friends", protect, userController.getFriends);
 
 router.get('/:id', userController.getUserProfile);
 router.put('/socket', userController.updateSocketId);
