@@ -1,110 +1,101 @@
 const Comment = require("../models/Comment.model");
 
-const createComment = async (commentBody) => {
-  const comment = await Comment.create(commentBody);
-  await comment.populate([
-    {
-      path: "userId",
-      select: { id: 1, name: 1 },
-    },
-    {
-      path: "parentCommentId",
-      select: { _id: 0, userId: 1 },
-      populate: {
-        path: "userId",
-        select: { id: 1, name: 1 },
-      },
-    },
-  ]);
-  return comment;
-};
-
-const getCommentByPostId = async (postId) => {
-  const parentComment = await Comment.find({
-    postId: postId,
-    parentCommentId: null,
-  })
-    .sort({ createdAt: "desc" })
-    .select("_id userId like content parentCommentId createdAt")
-    .populate([
-      {
-        path: "userId",
-        select: { id: 1, name: 1, image: 1 },
-      },
-    ]);
-  // hàm lấy các comment con có parentCommentId bằng id comment truyền vào
-  const repliesComment = async (commentId) => {
-    // lấy comments con từ db
-    const childComments = await Comment.find({
-      parentCommentId: commentId,
+class CommentService {
+  async getRootComments(postId) {
+    const rootComments = await Comment.find({
+      postId,
+      parentCommentId: null,
     })
-      .sort({ createdAt: "asc" })
-      .select("_id userId like content parentCommentId createdAt")
-      .populate([
-        {
-          path: "userId",
-          select: { id: 1, name: 1, image: 1 },
-        },
-        {
-          path: "parentCommentId",
-          select: { _id: 0, userId: 1 },
-          populate: {
-            path: "userId",
-            select: { id: 1, name: 1, image: 1 },
-          },
-        },
-      ]);
-    const dataReplies = [];
-    // dùng for of để lấy các comments
-    for (const comment of childComments) {
-      dataReplies.push({ ...comment.toObject() });
-      // dùng đệ quy gọi lại chính nó
-      const data = await repliesComment(comment._id);
-      // push vào mảng
-      dataReplies.push(...data);
-    }
-    return dataReplies;
-  };
+      .sort({ createdAt: -1 })
+      .populate("userId", "_id userName nameDisplay avatar");
 
-  const dataComments = [];
-  // dùng for of để lấy các comments
-  for (const comment of parentComment) {
-    const data = await repliesComment(comment._id);
-    dataComments.push({ ...comment.toObject(), replies: data });
+    // Đếm totalReplies cho từng bình luận gốc
+    const commentsWithReplyCount = await Promise.all(
+      rootComments.map(async (comment) => {
+        const replyCount = await Comment.countDocuments({
+          parentCommentId: comment._id,
+        });
+
+        return {
+          ...comment.toObject(),
+          totalReplies: replyCount,
+        };
+      })
+    );
+
+    return commentsWithReplyCount;
   }
-  return dataComments;
-};
 
-const getCommentById = async (id) => {
-  return Comment.findById(id);
-};
-
-const updateComment = async (commentId, updateBody) => {
-  const comment = await getCommentById(commentId);
-  if (!comment) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Không tìm thấy bình luận");
+  async getReplies(parentCommentId) {
+    return await Comment.find({
+      parentCommentId,
+    })
+      .sort({ createdAt: 1 }) // cũ trước
+      .populate("userId", "_id userName nameDisplay avatar");
   }
-  Object.assign(comment, updateBody);
-  await comment.save();
-  return comment;
-};
 
-const deleteComment = async (commentId) => {
-  const deletedCommentChild = async (id) => {
-    const childComment = await Comment.find({ parentCommentId: id });
-    for (const comment of childComment) {
-      await deletedCommentChild(comment._id);
+  async createComment({ postId, content, userId, parentCommentId = null }) {
+    // Optional: kiểm tra postId và parentCommentId có tồn tại không
+    // Nếu là reply, không được trả lời bình luận con
+    if (parentCommentId) {
+      const parent = await Comment.findById(parentCommentId);
+      if (!parent || parent.parentCommentId)
+        throw new Error("Cannot reply to a nested comment");
     }
-    await Comment.deleteOne({ _id: id });
-  };
 
-  deletedCommentChild(commentId);
-};
-const commentService = {
-  createComment,
-  getCommentByPostId,
-  updateComment,
-  deleteComment,
-};
+    const comment = await Comment.create({
+      postId,
+      content,
+      userId,
+      parentCommentId,
+    });
 
-module.exports = commentService;
+    return await comment.populate("userId", "_id userName nameDisplay avatar");
+  }
+
+  async updateComment(commentId, content, userId) {
+    const comment = await Comment.findById(commentId);
+    if (!comment) throw new Error("Comment not found");
+    if (comment.userId.toString() !== userId.toString())
+      throw new Error("Permission denied");
+
+    comment.content = content;
+    await comment.save();
+
+    return await comment.populate("userId", "_id userName nameDisplay avatar");
+  }
+
+  async deleteComment(commentId, userId) {
+    const comment = await Comment.findById(commentId);
+    if (!comment) throw new Error("Comment not found");
+    if (comment.userId.toString() !== userId.toString())
+      throw new Error("Permission denied");
+
+    await comment.deleteOne();
+    return comment;
+  }
+
+  async toggleLike(commentId, userId) {
+    const comment = await Comment.findById(commentId);
+    if (!comment) throw new Error("Comment not found");
+
+    const index = comment.likes.findIndex((id) => id.toString() === userId.toString());
+
+    let liked = false;
+
+    if (index === -1) {
+      comment.likes.push(userId);
+      liked = true;
+    } else {
+      comment.likes.splice(index, 1);
+    }
+
+    await comment.save();
+
+    const data = await comment.populate("userId", "_id userName nameDisplay avatar");
+
+    return { liked, data };
+  }
+}
+
+module.exports = new CommentService();

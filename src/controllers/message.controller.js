@@ -159,7 +159,17 @@ exports.markAsDelivered = async (req, res, next) => {
 
     // ✅ Emit real-time: notify sender
     const io = getIO();
-    const senderId = message.senderId._id || message.senderId;
+    const senderId =
+      (message.senderId && message.senderId._id) || message.senderId || null;
+
+    if (senderId && senderId.toString() !== userId.toString()) {
+      io.to(senderId.toString()).emit("message_delivered", {
+        messageId: message._id,
+        deliveredBy: userId
+      });
+    }
+
+
     if (senderId.toString() !== userId.toString()) {
       io.to(senderId.toString()).emit("message_delivered", {
         messageId: message._id,
@@ -193,7 +203,17 @@ exports.markAsRead = async (req, res, next) => {
     }
 
     const io = getIO();
-    const senderId = message.senderId._id || message.senderId;
+    const senderId =
+      (message.senderId && message.senderId._id) || message.senderId || null;
+
+    if (senderId && senderId.toString() !== userId.toString()) {
+      io.to(senderId.toString()).emit("message_read", {
+        messageId: message._id,
+        readBy: userId
+      });
+    }
+
+
     if (senderId.toString() !== userId.toString()) {
       io.to(senderId.toString()).emit("message_read", {
         messageId: message._id,
@@ -227,3 +247,42 @@ exports.getMessagesByConversation = async (req, res, next) => {
   }
 };
 
+exports.markDeliveredBulk = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const { messageIds } = req.body;
+
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({ message: "Thiếu hoặc sai định dạng messageIds" });
+    }
+
+    await MessageService.markDeliveredBulk(messageIds, userId);
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Đã đánh dấu đã nhận cho các tin nhắn",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.markReadBulk = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const { messageIds } = req.body;
+
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({ message: "Thiếu hoặc sai định dạng messageIds" });
+    }
+
+    await MessageService.markReadBulk(messageIds, userId);
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Đã đánh dấu đã đọc cho các tin nhắn",
+    });
+  } catch (err) {
+    next(err);
+  }
+};

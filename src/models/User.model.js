@@ -118,7 +118,31 @@ const UserSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         default: []
-    }]
+    }],
+    banInfo: {
+        isBanned: {
+            type: Boolean,
+            default: false,
+        },
+        reason: {
+            type: String,
+            maxlength: 500,
+            default: null,
+        },
+        bannedAt: {
+            type: Date,
+            default: null,
+        },
+        banExpiresAt: {
+            type: Date,
+            default: null,
+        },
+        bannedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        }
+    },
 
 }, {
     timestamps: true,

@@ -1,51 +1,24 @@
 const express = require("express");
 const router = express.Router();
+const CommentController = require("../controllers/comment.controller");
+const { protect } = require('../services/jwt.service');
 
-const commentController = require('../controllers/comment.controller');
+// Lấy danh sách bình luận gốc trong 1 bài viết
+router.get("/post/:postId", CommentController.getCommentsByPost);
 
-router.get(
-  "/bypost/:id",
-  commentController.getCommentsByPostId
-);
-router.post(
-  "/",
-  commentController.createComment
-);
-router.put(
-  "/:id",
-  commentController.updateComment
-);
-router.delete(
-  "/:id",
-  commentController.deleteComment
-);
+// Lấy danh sách trả lời của 1 bình luận
+router.get("/:parentCommentId/replies", CommentController.getReplies);
+
+// Thêm bình luận mới (gốc hoặc trả lời tùy theo body)
+router.post("/", protect, CommentController.createComment);
+
+// Sửa bình luận (chỉ chủ sở hữu)
+router.put("/:id", protect, CommentController.updateComment);
+
+// Xoá bình luận (chỉ chủ sở hữu)
+router.delete("/:id", protect, CommentController.deleteComment);
+
+// Thích hoặc bỏ thích bình luận
+router.post("/:id/like", protect, CommentController.toggleLikeComment);
 
 module.exports = router;
-
-// const createComment = {
-//   body: Joi.object().keys({
-//     postId: Joi.string().required().custom(objectId),
-//     userId: Joi.string().required().custom(objectId),
-//     content: Joi.string().max(255).required(),
-//     like: Joi.number(),
-//     parentCommentId: Joi.optional().custom(objectId),
-//   }),
-// };
-// const updateComment = {
-//   params: Joi.object().keys({
-//     id: Joi.required().custom(objectId),
-//   }),
-//   body: Joi.object().keys({
-//     content: Joi.string().required(),
-//   }),
-// };
-// const deleteComment = {
-//   params: Joi.object().keys({
-//     id: Joi.required().custom(objectId),
-//   }),
-// };
-// const getCommentByPostId = {
-//   params: Joi.object().keys({
-//     id: Joi.required().custom(objectId),
-//   }),
-// };

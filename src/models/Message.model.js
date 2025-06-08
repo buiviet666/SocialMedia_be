@@ -23,7 +23,7 @@ const MessageSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['SENT', 'EDITED', 'DELETED'],
+    enum: ['SENT', 'EDITED', 'DELETED', 'HIDDEN'], // ✅ thêm 'HIDDEN' để admin có thể ẩn
     default: 'SENT'
   },
   seenBy: [{
@@ -40,11 +40,23 @@ const MessageSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  updatedAt: Date
+  updatedAt: Date,
+
+  deletedAt: {
+    type: Date,
+    default: null
+  }
 });
 
+// ✅ Cập nhật `updatedAt` mỗi khi save
 MessageSchema.pre('save', function (next) {
   this.updatedAt = new Date();
+  next();
+});
+
+// ✅ Populate mặc định
+MessageSchema.pre(/^find/, function (next) {
+  this.populate("senderId", "_id nameDisplay userName avatar");
   next();
 });
 

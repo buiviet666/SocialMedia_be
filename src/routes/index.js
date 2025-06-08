@@ -7,6 +7,8 @@ const routerReport = require('./report.routes');
 const routerShare = require('./share.routes');
 const routerConversation = require('./conversation.routes');
 const routerMessage = require("./message.routes");
+const routerAdmin = require("./admin.routes");
+const routerSearchHistory = require("./searchHistory.routes");
 const router = express.Router();
 
 router.use("/users", routerUser);
@@ -17,6 +19,8 @@ router.use('/reports', routerReport);
 router.use('/shares', routerShare);
 router.use('/conversations', routerConversation);
 router.use("/messages", routerMessage);
+router.use("/admins", routerAdmin);
+router.use("/historys", routerSearchHistory);
 
 
 module.exports = router;

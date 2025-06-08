@@ -61,7 +61,7 @@ class MessageService {
     }
 
     async markAsRead(messageId, userId) {
-        const message = await Message.findById(messageId);
+        const message = await Message.findById(messageId).populate("senderId", "_id");
         if (!message) return null;
 
         // Nếu chưa có trong seenBy thì thêm
@@ -75,7 +75,7 @@ class MessageService {
     }
 
     async markAsDelivered(messageId, userId) {
-        const message = await Message.findById(messageId);
+        const message = await Message.findById(messageId).populate("senderId", "_id");
         if (!message) return null;
 
         // Nếu chưa có trong deliveredTo thì thêm
@@ -92,6 +92,30 @@ class MessageService {
         return await Message.find({ conversationId })
         .sort({ createdAt: 1 })
         .populate("senderId", "_id nameDisplay avatar");
+    }
+
+    async markDeliveredBulk(messageIds, userId) {
+        await Message.updateMany(
+        {
+            _id: { $in: messageIds },
+            deliveredTo: { $ne: userId },
+        },
+        {
+            $addToSet: { deliveredTo: userId },
+        }
+        );
+    }
+
+    async markReadBulk(messageIds, userId) {
+        await Message.updateMany(
+        {
+            _id: { $in: messageIds },
+            seenBy: { $ne: userId },
+        },
+        {
+            $addToSet: { seenBy: userId },
+        }
+        );
     }
 }
 

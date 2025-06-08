@@ -9,5 +9,8 @@ router.delete("/:id", protect, MessageController.deleteMessage);
 router.post("/:id/read", protect, MessageController.markAsRead);
 router.post("/:id/delivered", protect, MessageController.markAsDelivered);
 router.get("/conversation/:conversationId", protect, MessageController.getMessagesByConversation);
+router.post('/mark-delivered-bulk', protect, MessageController.markDeliveredBulk);
+router.post('/mark-read-bulk', protect, MessageController.markReadBulk);
+
 
 module.exports = router;

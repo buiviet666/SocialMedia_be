@@ -184,8 +184,8 @@ const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
-        success: false,
-        message: `Vai trò ${req.user.role} không có quyền truy cập tài nguyên này`
+        statusCode: 403,
+        message: `Role ${req.user.role} does not have access to this resource`
       });
     }
     next();
