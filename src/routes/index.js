@@ -9,6 +9,7 @@ const routerConversation = require('./conversation.routes');
 const routerMessage = require("./message.routes");
 const routerAdmin = require("./admin.routes");
 const routerSearchHistory = require("./searchHistory.routes");
+const routerNotification = require("./notification.routes");
 const router = express.Router();
 
 router.use("/users", routerUser);
@@ -21,6 +22,7 @@ router.use('/conversations', routerConversation);
 router.use("/messages", routerMessage);
 router.use("/admins", routerAdmin);
 router.use("/historys", routerSearchHistory);
+router.use("/notifications", routerNotification);
 
 
 module.exports = router;

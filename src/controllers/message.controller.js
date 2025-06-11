@@ -1,5 +1,6 @@
 const MessageService = require("../services/message.service");
 const { getIO } = require("../sockets/socket");
+const sendNotification = require("../utils/sendNotification");
 
 // Send a message
 exports.sendMessage = async (req, res, next) => {
@@ -30,6 +31,17 @@ exports.sendMessage = async (req, res, next) => {
     recipients.forEach((user) => {
       io.to(user._id.toString()).emit("receive_message", message);
     });
+
+    const receiver = recipients[0]; // Giả định hội thoại 1-1
+    if (receiver) {
+      await sendNotification({
+        type: "MESSAGE",
+        senderId,
+        receiverId: receiver._id,
+        message: "đã gửi cho bạn một tin nhắn",
+        redirectUrl: `/inbox/${conversationId}`
+      });
+    }
 
     res.status(201).json({
       statusCode: 201,

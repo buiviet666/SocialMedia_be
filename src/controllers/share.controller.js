@@ -35,3 +35,20 @@ exports.getMyShares = async (req, res, next) => {
     next(err);
   }
 };
+
+// GET shares by specific userId
+exports.getSharesByUserId = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+
+    const shares = await shareService.getSharesByUser(userId);
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Get shared posts by user successfully!',
+      data: shares
+    });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -6,7 +6,7 @@ let io;
 const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173", // sửa lại khi deploy
+      origin: "http://localhost:5173", // ⚠ sửa khi deploy
       credentials: true,
     },
   });
@@ -14,20 +14,18 @@ const initSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("🟢 New client connected:", socket.id);
 
-    // Nhận userId từ client FE và cho vào room theo userId
+    // User vào phòng riêng của họ
     socket.on("join", async (userId) => {
       try {
         console.log(`✅ User ${userId} joined socket room`);
 
-        // Cập nhật trạng thái online + lưu socketId
         await User.findByIdAndUpdate(userId, {
           socketId: socket.id,
           isOnline: true,
         });
 
-        socket.join(userId.toString()); // Vào room riêng theo userId
+        socket.join(userId.toString()); // Join private room theo userId
 
-        // 🔴 Gửi realtime cho tất cả người khác biết user online
         socket.broadcast.emit("user_online_status", {
           userId,
           isOnline: true,
@@ -35,6 +33,18 @@ const initSocket = (server) => {
       } catch (error) {
         console.error("❌ Lỗi khi join socket:", error);
       }
+    });
+
+    // Join phòng bài viết cụ thể
+    socket.on("join_post_room", (postId) => {
+      socket.join(`post_${postId}`);
+      console.log(`📌 Joined post room: post_${postId}`);
+    });
+
+    // Leave phòng bài viết
+    socket.on("leave_post_room", (postId) => {
+      socket.leave(`post_${postId}`);
+      console.log(`🚪 Left post room: post_${postId}`);
     });
 
     // Khi client ngắt kết nối
@@ -47,7 +57,6 @@ const initSocket = (server) => {
           { new: true }
         );
 
-        // 🔴 Gửi realtime cho tất cả người khác biết user offline
         if (user?._id) {
           socket.broadcast.emit("user_online_status", {
             userId: user._id.toString(),
@@ -61,7 +70,7 @@ const initSocket = (server) => {
   });
 };
 
-// Export socket instance để dùng emit ở nơi khác
+// Export socket instance để dùng emit từ backend
 module.exports = {
   initSocket,
   getIO: () => io,

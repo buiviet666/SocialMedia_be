@@ -3,6 +3,8 @@ const AppError = require('../utils/appError');
 const emailService  = require('./email.service');
 const { generateToken, generateRefreshToken, generateVerifyEmailToken, verifyEmailToken, removeToken, generateResetPasswordToken, verifyResetPasswordToken } = require('./jwt.service');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary.helper');
+const sendNotification = require("../utils/sendNotification");
+const { getIO } = require('../sockets/socket');
 
 class UserService {
   async createUser(userData) {
@@ -26,7 +28,9 @@ class UserService {
     if (!user || !(await user.comparePassword(password))) {
       throw new AppError('Incorrect login password information!', 404);
     }
-
+    if (user.isBanned) {
+      throw new AppError('Your account has been banned.', 403);
+    }
     await user.updateLastLogin();
 
     const accessToken = generateToken({ userId: user._id }, '1h');
@@ -51,36 +55,19 @@ class UserService {
     return await User.findById(id);
   }
 
-  // async updateUser(id, updateData) {
-  //   const user = await User.findByIdAndUpdate(id, updateData, {
-  //     new: true,
-  //     runValidators: true
-  //   });
-  //   return user ? user.getPublicProfile() : null;
-  // }
-
   async deleteUser(id) {
     return await User.findByIdAndDelete(id);
   }
 
   async changePasswordProcess(userId, currentPassword, newPassword) {
     const user = await User.findById(userId).select('+password');
-    
     if (!user) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: 'User does not exist!'
-      });
+      throw new AppError('User does not exist!', 401);
     }
-
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: 'Password is incorrect!'
-      });
+      throw new AppError('Password is incorrect!', 401);
     }
-
     user.password = newPassword;
     await user.save();
   }
@@ -104,14 +91,9 @@ class UserService {
 
   async requestResetPassword(email) {
     const user = await User.findOne({ emailAddress: email });
-    
     if (!user) {
-      res.status(401).json({
-        statusCode: 401,
-        message: 'Email does not exist!'
-      })
+      throw new AppError('Email does not exist!', 401);
     };
-
     const token = await generateResetPasswordToken(user._id);
     await emailService.sendResetPasswordEmail(user.emailAddress, token);
   }
@@ -119,14 +101,9 @@ class UserService {
   async resetPassword(token, newPassword) {
     const { userId } = await verifyResetPasswordToken(token);
     const user = await User.findById(userId);
-
     if (!user) {
-      res.status(401).json({
-        statusCode: 401,
-        message: 'User does not exist!'
-      })
-    };
-
+      throw new AppError('User does not exist!', 401);
+    }
     user.password = newPassword;
     await user.save();
     await removeToken(token);
@@ -136,7 +113,9 @@ class UserService {
     const user = await User.findById(userId)
       .populate('followers', 'userName avatar')
       .populate('following', 'userName avatar');
-    if (!user) throw new AppError('No user found', 403);
+    if (!user) {
+      throw new AppError('User does not exist!', 401);
+    };
     return user.getPublicProfile();
   };
 
@@ -153,19 +132,17 @@ class UserService {
       runValidators: true,
       context: 'query'
     });
-
     if (!user) {
-      throw new AppError('User not found for update', 404);
-    }
-
+      throw new AppError('User does not exist!', 401);
+    };
     return user.getPublicProfile();
   }
 
   async changePassword(userId, currentPassword, newPassword) {
     const user = await User.findById(userId).select('+password');
     if (!user) {
-      throw new AppError('User not found', 404);
-    }
+      throw new AppError('User does not exist!', 401);
+    };
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       throw new AppError('Current password is incorrect', 401);
@@ -222,20 +199,36 @@ class UserService {
 
   async followUser(currentUserId, targetUserId) {
     if (currentUserId === targetUserId) {
-      throw new AppError('You cannot follow yourself', 400);
+      throw new AppError('You can not follow yourself!', 400);
     }
     const currentUser = await User.findById(currentUserId);
     const targetUser = await User.findById(targetUserId);
     if (!targetUser) {
-      throw new AppError('Target user not found', 404);
+      throw new AppError('No user found to follow', 404);
     }
     if (currentUser.following.includes(targetUserId)) {
-      throw new AppError('Already following this user', 400);
+      throw new AppError('You are already following this person', 400);
     }
     currentUser.following.push(targetUserId);
     targetUser.followers.push(currentUserId);
     await currentUser.save();
     await targetUser.save();
+
+    // sent notification
+    await sendNotification({
+      type: "FOLLOW",
+      senderId: currentUserId,
+      receiverId: targetUserId,
+      message: `${currentUser.nameDisplay || currentUser.userName} has followed you`,
+      redirectUrl: `/profile/${currentUserId}`
+    });
+
+    // Emit socket to user
+    const io = getIO();
+    io.to(targetUserId.toString()).emit("followed", {
+      followerId: currentUserId
+    });
+
     return true;
   }
 
@@ -245,8 +238,8 @@ class UserService {
     if (!targetUser) {
       throw new AppError('Target user not found', 404);
     }
-    currentUser.following = currentUser.following.filter(id => id.toString() !== targetUserId);
-    targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUserId);
+    currentUser.following = currentUser.following.filter(id => id.toString() !== targetUserId.toString());
+    targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUserId.toString());
     await currentUser.save();
     await targetUser.save();
     return true;
@@ -258,7 +251,9 @@ class UserService {
     }
     const user = await User.findById(currentUserId);
     const target = await User.findById(targetUserId);
-    if (!target) throw new AppError('Target user not found', 404);
+    if (!target) {
+      throw new AppError('Target user not found', 404);
+    } 
     if (user.blockedUsers.includes(targetUserId)) {
       throw new AppError('Already blocked this user', 400);
     }
@@ -270,7 +265,9 @@ class UserService {
   async unblockUser(currentUserId, targetUserId) {
     const user = await User.findById(currentUserId);
     const target = await User.findById(targetUserId);
-    if (!target) throw new AppError('Target user not found', 404);
+    if (!target) {
+      throw new AppError('Target user not found', 400);
+    }
     user.blockedUsers = user.blockedUsers.filter(
       (id) => id.toString() !== targetUserId
     );
@@ -291,15 +288,16 @@ class UserService {
     if (!currentUser) {
       throw new AppError('User not found', 404);
     }
-    // Danh sách loại trừ: chính mình + đã follow + đã chặn hoặc bị chặn
+
     const excludedUserIds = [
       userId,
       ...currentUser.following.map(id => id.toString()),
       ...currentUser.blockedUsers.map(id => id.toString())
     ];
-    // Tìm những người chưa bị chặn và chưa follow
+
     const recommended = await User.find({
       _id: { $nin: excludedUserIds },
+      role: 'USER',
       // statusAcc: 'ACTIVE'
     })
     .limit(limit)
@@ -312,7 +310,6 @@ class UserService {
     if (!user) {
       throw new AppError('User not found', 404);
     }
-    // Optional: Xóa user khỏi followers/following của người khác
     await User.updateMany(
       { following: userId },
       { $pull: { following: userId } }

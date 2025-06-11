@@ -12,7 +12,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['LIKE', 'COMMENT', 'FOLLOW', 'SHARE', 'MESSAGE'],
+    enum: ['LIKE', 'COMMENT', 'FOLLOW', 'SHARE', 'MESSAGE', 'REPLY'],
     required: true
   },
   postId: {
@@ -23,11 +23,26 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  redirectUrl: {
+    type: String,
+    trim: true
+  },
+  extraData: {
+    type: mongoose.Schema.Types.Mixed
+  },
   isRead: {
     type: Boolean,
     default: false
   },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   }

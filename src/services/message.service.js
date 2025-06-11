@@ -10,13 +10,11 @@ class MessageService {
             type
         });
 
-        // Cập nhật lastMessage cho conversation
         await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: message._id,
             updatedAt: new Date()
         });
 
-        // Populate để trả về chi tiết
         return await Message.findById(message._id)
         .populate("senderId", "_id userName nameDisplay avatar")
         .populate({
@@ -42,49 +40,38 @@ class MessageService {
     }
 
     async deleteMessage(messageId, userId) {
-    // Tìm message và populate participants để dùng cho socket emit
         const message = await Message.findById(messageId).populate({
             path: "conversationId",
             select: "_id participants"
         });
-
         if (!message) return null;
-
         if (message.senderId.toString() !== userId.toString()) {
             return "unauthorized";
         }
-
-        // Xóa cứng khỏi DB
         await Message.deleteOne({ _id: messageId });
-
-        return message; // vẫn trả lại message để controller dùng emit socket
+        return message;
     }
 
     async markAsRead(messageId, userId) {
         const message = await Message.findById(messageId).populate("senderId", "_id");
         if (!message) return null;
 
-        // Nếu chưa có trong seenBy thì thêm
         if (!message.seenBy.includes(userId)) {
-        message.seenBy.push(userId);
-        message.updatedAt = new Date();
-        await message.save();
+            message.seenBy.push(userId);
+            message.updatedAt = new Date();
+            await message.save();
         }
-
         return message._id;
     }
 
     async markAsDelivered(messageId, userId) {
         const message = await Message.findById(messageId).populate("senderId", "_id");
         if (!message) return null;
-
-        // Nếu chưa có trong deliveredTo thì thêm
         if (!message.deliveredTo.includes(userId)) {
-        message.deliveredTo.push(userId);
-        message.updatedAt = new Date();
-        await message.save();
+            message.deliveredTo.push(userId);
+            message.updatedAt = new Date();
+            await message.save();
         }
-
         return message._id;
     }
 

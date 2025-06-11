@@ -5,5 +5,6 @@ const shareController = require('../controllers/share.controller');
 
 router.post('/', protect, shareController.sharePost);
 router.get('/my', protect, shareController.getMyShares);
+router.get('/user/:id', protect, shareController.getSharesByUserId);
 
 module.exports = router;
