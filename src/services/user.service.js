@@ -324,7 +324,7 @@ class UserService {
 
   async getUsersByIds(ids) {
     const users = await User.find({ _id: { $in: ids } })
-      .select('_id userName nameDisplay avatar isOnline')
+      .select('_id userName nameDisplay avatar isOnline bio')
       .lean();
     return users;
   }

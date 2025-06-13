@@ -32,7 +32,7 @@ class PostService {
                         { userId: currentUserId }
                     ]
                 })
-                .populate('userId', 'userName avatar nameDisplay')
+                .populate('userId', 'userName avatar nameDisplay nameDisplay')
                 .sort({ createdAt: -1 });
 
             case 'FRIENDS':
@@ -42,7 +42,7 @@ class PostService {
                 privacy: 'FRIENDS',
                 userId: { $in: friendIds }
             })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .sort({ createdAt: -1 });
 
             case 'FRIENDONLY':
@@ -51,7 +51,7 @@ class PostService {
                 'visibilitySetting.type': 'ALLOWED',
                 'visibilitySetting.userIds': currentUserId
             })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .sort({ createdAt: -1 });
 
             case 'EXCEPTFRIEND':
@@ -60,7 +60,7 @@ class PostService {
                 'visibilitySetting.type': 'EXCLUDED',
                 'visibilitySetting.userIds': { $ne: currentUserId }
             })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .sort({ createdAt: -1 });
 
             case 'PRIVATE':
@@ -68,7 +68,7 @@ class PostService {
                 privacy: 'PRIVATE',
                 userId: currentUserId
             })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .sort({ createdAt: -1 });
 
             default:
@@ -109,13 +109,13 @@ class PostService {
         return await Post.find({
             userId
         })
-        .populate('userId', 'userName avatar')
+        .populate('userId', 'userName avatar nameDisplay')
         .sort({createdAt: -1});
     };
 
     async getAllPostPublic() {
         return await Post.find({privacy: "PUBLIC"})
-        .populate('userId', 'userName avatar')
+        .populate('userId', 'userName avatar nameDisplay')
         .sort({createdAt: -1});
     };
 
@@ -184,7 +184,7 @@ class PostService {
 
     async getLikedPosts(userId) {
         const posts = await Post.find({ likes: userId })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay bio')
             .sort({ createdAt: -1 });
         return posts;
     };
@@ -195,7 +195,7 @@ class PostService {
             path: 'savedPosts',
             populate: {
                 path: 'userId',
-                select: 'userName avatar'
+                select: 'userName avatar nameDisplay bio'
             }
         });
         if (!user) {
@@ -212,7 +212,7 @@ class PostService {
             userId: { $in: followingIds },
             privacy: { $in: ['FRIENDS', 'FRIENDONLY', 'EXCEPTFRIEND'] }
         })
-        .populate('userId', 'userName avatar')
+        .populate('userId', 'userName avatar nameDisplay')
         .sort({ createdAt: -1 });
 
         const visiblePosts = posts.filter(post => {
@@ -231,7 +231,7 @@ class PostService {
 
     async getPostDetail(postId, currentUserId) {
         const post = await Post.findById(postId)
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .lean();
         if (post.privacy === 'PUBLIC') return post;
         if (post.privacy === 'PRIVATE') {
@@ -263,7 +263,7 @@ class PostService {
         const currentUser = await User.findById(currentUserId).select('following');
         const isFriend = currentUser.following.includes(targetUserId);
         const posts = await Post.find({ userId: targetUserId })
-            .populate('userId', 'userName avatar')
+            .populate('userId', 'userName avatar nameDisplay')
             .sort({ createdAt: -1 })
             .lean();
         return posts.filter(post => {
@@ -289,7 +289,7 @@ class PostService {
     async getPostLikes(postId) {
         const post = await Post.findById(postId).select('likes');
         const users = await User.find({ _id: { $in: post.likes } })
-        .select('userName nameDisplay avatar');
+        .select('userName nameDisplay avatar bio');
         return users;
     }
 };
