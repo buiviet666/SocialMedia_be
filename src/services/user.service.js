@@ -329,15 +329,12 @@ class UserService {
     return users;
   }
 
-  async getFriends(userId) {
-    const user = await User.findById(userId).populate("following", "_id userName nameDisplay avatar");
+  async getFollowingUsers(userId) {
+    const user = await User.findById(userId)
+      .populate("following", "_id userName nameDisplay avatar bio isOnline");
     if (!user) return [];
 
-    const friends = user.following.filter((followedUser) =>
-      user.followers.includes(followedUser._id)
-    );
-
-    return friends;
+    return user.following;
   }
 
   async updateSocketId(userId, socketId) {

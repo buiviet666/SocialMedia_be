@@ -54,6 +54,60 @@ exports.sendMessage = async (req, res, next) => {
 };
 
 // update a message
+// exports.updateMessage = async (req, res, next) => {
+//   try {
+//     const userId = req.user._id;
+//     const messageId = req.params.id;
+//     const { content } = req.body;
+
+//     if (!content) {
+//       return res.status(400).json({
+//         statusCode: 400,
+//         message: "Content is required to update message"
+//       });
+//     }
+
+//     const message = await MessageService.updateMessage(messageId, userId, content);
+
+//     if (message === "unauthorized") {
+//       return res.status(403).json({
+//         statusCode: 403,
+//         message: "You can only edit your own message"
+//       });
+//     }
+
+//     if (!message) {
+//       return res.status(404).json({
+//         statusCode: 404,
+//         message: "Message not found"
+//       });
+//     }
+
+//     // ✅ Emit real-time: notify all except sender
+//     const io = getIO();
+//     const conversation = message.conversationId;
+//     const recipients = conversation.participants.filter(
+//       (p) => p.toString() !== userId.toString()
+//     );
+//     recipients.forEach((receiverId) => {
+//       io.to(receiverId.toString()).emit("message_edited", {
+//         messageId: message._id,
+//         conversationId: conversation._id,
+//         content: message.content,
+//         status: message.status,
+//         updatedAt: message.updatedAt
+//       });
+//     });
+
+//     res.status(200).json({
+//       statusCode: 200,
+//       message: "Message updated successfully!",
+//       data: message
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 exports.updateMessage = async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -69,13 +123,6 @@ exports.updateMessage = async (req, res, next) => {
 
     const message = await MessageService.updateMessage(messageId, userId, content);
 
-    if (message === "unauthorized") {
-      return res.status(403).json({
-        statusCode: 403,
-        message: "You can only edit your own message"
-      });
-    }
-
     if (!message) {
       return res.status(404).json({
         statusCode: 404,
@@ -83,12 +130,12 @@ exports.updateMessage = async (req, res, next) => {
       });
     }
 
-    // ✅ Emit real-time: notify all except sender
     const io = getIO();
     const conversation = message.conversationId;
     const recipients = conversation.participants.filter(
       (p) => p.toString() !== userId.toString()
     );
+
     recipients.forEach((receiverId) => {
       io.to(receiverId.toString()).emit("message_edited", {
         messageId: message._id,
@@ -110,19 +157,55 @@ exports.updateMessage = async (req, res, next) => {
 };
 
 // delete a message
+// exports.deleteMessage = async (req, res, next) => {
+//   try {
+//     const userId = req.user._id;
+//     const messageId = req.params.id;
+
+//     const message = await MessageService.deleteMessage(messageId, userId);
+
+//     if (message === "unauthorized") {
+//       return res.status(403).json({
+//         statusCode: 403,
+//         message: "You can only delete your own message"
+//       });
+//     }
+
+//     if (!message) {
+//       return res.status(404).json({
+//         statusCode: 404,
+//         message: "Message not found"
+//       });
+//     }
+
+//     // ✅ Emit real-time: notify other participants (nếu dùng socket)
+//     const io = getIO();
+//     const recipients = message.conversationId.participants.filter(
+//       (p) => p.toString() !== userId.toString()
+//     );
+
+//     recipients.forEach((receiverId) => {
+//       io.to(receiverId.toString()).emit("message_deleted", {
+//         messageId: message._id,
+//         conversationId: message.conversationId._id
+//       });
+//     });
+
+//     return res.status(200).json({
+//       statusCode: 200,
+//       message: "Message deleted successfully!",
+//       data: message._id
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 exports.deleteMessage = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const messageId = req.params.id;
 
     const message = await MessageService.deleteMessage(messageId, userId);
-
-    if (message === "unauthorized") {
-      return res.status(403).json({
-        statusCode: 403,
-        message: "You can only delete your own message"
-      });
-    }
 
     if (!message) {
       return res.status(404).json({
@@ -131,7 +214,6 @@ exports.deleteMessage = async (req, res, next) => {
       });
     }
 
-    // ✅ Emit real-time: notify other participants (nếu dùng socket)
     const io = getIO();
     const recipients = message.conversationId.participants.filter(
       (p) => p.toString() !== userId.toString()
@@ -153,6 +235,7 @@ exports.deleteMessage = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // mark as read
 exports.markAsDelivered = async (req, res, next) => {

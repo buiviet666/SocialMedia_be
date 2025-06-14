@@ -223,16 +223,14 @@ exports.getUsersByIds = async (req, res, next) => {
 };
 
 // get list friends
-exports.getFriends = async (req, res, next) => {
+exports.getFollowingUsers = async (req, res, next) => {
   try {
     const userId = req.user._id;
-
-    const friends = await userService.getFriends(userId);
-
+    const followingUsers = await userService.getFollowingUsers(userId);
     res.status(200).json({
       statusCode: 200,
-      message: "Friends fetched successfully",
-      data: friends,
+      message: "Following users fetched successfully",
+      data: followingUsers,
     });
   } catch (error) {
     next(error);

@@ -27,17 +27,43 @@ class MessageService {
         });
     }
 
+    // async updateMessage(messageId, userId, newContent) {
+    //     const message = await Message.findById(messageId)
+    //     .populate("conversationId", "_id participants");
+    //     if (!message) return null;
+    //     if (message.senderId.toString() !== userId.toString()) return "unauthorized";
+    //     message.content = newContent;
+    //     message.status = "EDITED";
+    //     message.updatedAt = new Date();
+    //     await message.save();
+    //     return await message.populate("senderId", "_id userName nameDisplay avatar");
+    // }
+
     async updateMessage(messageId, userId, newContent) {
-        const message = await Message.findById(messageId)
-        .populate("conversationId", "_id participants");
+        const message = await Message.findById(messageId).populate("conversationId", "_id participants");
         if (!message) return null;
-        if (message.senderId.toString() !== userId.toString()) return "unauthorized";
+
         message.content = newContent;
         message.status = "EDITED";
         message.updatedAt = new Date();
         await message.save();
+
         return await message.populate("senderId", "_id userName nameDisplay avatar");
     }
+
+
+    // async deleteMessage(messageId, userId) {
+    //     const message = await Message.findById(messageId).populate({
+    //         path: "conversationId",
+    //         select: "_id participants"
+    //     });
+    //     if (!message) return null;
+    //     if (message.senderId.toString() !== userId.toString()) {
+    //         return "unauthorized";
+    //     }
+    //     await Message.deleteOne({ _id: messageId });
+    //     return message;
+    // }
 
     async deleteMessage(messageId, userId) {
         const message = await Message.findById(messageId).populate({
@@ -45,9 +71,7 @@ class MessageService {
             select: "_id participants"
         });
         if (!message) return null;
-        if (message.senderId.toString() !== userId.toString()) {
-            return "unauthorized";
-        }
+
         await Message.deleteOne({ _id: messageId });
         return message;
     }
