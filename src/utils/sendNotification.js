@@ -8,7 +8,8 @@ const sendNotification = async ({
   postId,
   message,
   redirectUrl,
-  extraData
+  extraData,
+  avatar
 }) => {
   if (!receiverId || !senderId || !type) {
     console.error('Thiếu dữ liệu cần thiết để gửi thông báo');
@@ -23,7 +24,8 @@ const sendNotification = async ({
     postId,
     message,
     redirectUrl,
-    extraData
+    extraData,
+    avatar
   });
 
   // Gửi socket tới người nhận

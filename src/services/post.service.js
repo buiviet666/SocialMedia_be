@@ -122,6 +122,7 @@ class PostService {
     async toggleLike(postId, userId) {
         const post = await Post.findById(postId).populate("userId", "_id userName nameDisplay avatar");
         const user = await User.findById(userId);
+        const avatarUrl = user?.avatar || '';
         if (!post) {
             throw new AppError('Article does not exist', 400);
         }
@@ -139,7 +140,8 @@ class PostService {
                 receiverId: post.userId._id,
                 postId,
                 message: `${user.nameDisplay || user.userName} has like your post!`,
-                redirectUrl: `/posts/${postId}`
+                redirectUrl: `/post/${postId}`,
+                avatar: avatarUrl,
             });
             }
 

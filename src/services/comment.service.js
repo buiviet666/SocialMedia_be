@@ -1,5 +1,6 @@
 const Comment = require("../models/Comment.model");
 const Post = require("../models/Post.model");
+const User = require('../models/User.model');
 const sendNotification = require("../utils/sendNotification");
 const { getIO } = require('../sockets/socket');
 
@@ -53,6 +54,9 @@ class CommentService {
 
     const populatedComment = await comment.populate("userId", "_id userName nameDisplay avatar");
 
+    const currentUser = await User.findById(userId);
+    const avatarUrl = currentUser?.avatar || '';
+
     const post = await Post.findById(postId);
     if (!post) throw new Error("Post not found");
 
@@ -62,8 +66,9 @@ class CommentService {
         senderId: userId,
         receiverId: post.userId,
         postId,
-        message: "đã bình luận về bài viết của bạn",
-        redirectUrl: `/posts/${postId}`
+        message: `${currentUser.nameDisplay || currentUser.userName} has comment on your post`,
+        redirectUrl: `/post/${postId}`,
+        avatar: avatarUrl,
       });
     }
 
@@ -78,8 +83,9 @@ class CommentService {
           senderId: userId,
           receiverId: parent.userId,
           postId,
-          message: "đã trả lời bình luận của bạn",
-          redirectUrl: `/posts/${postId}#${comment._id}`
+          message: `${currentUser.nameDisplay || currentUser.userName} has reply your comment on your post`,
+          redirectUrl: `/post/${postId}#${comment._id}`,
+          avatar: avatarUrl,
         });
       }
     }

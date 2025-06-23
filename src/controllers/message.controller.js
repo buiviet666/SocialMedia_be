@@ -1,4 +1,5 @@
 const MessageService = require("../services/message.service");
+const User = require('../models/User.model');
 const { getIO } = require("../sockets/socket");
 const sendNotification = require("../utils/sendNotification");
 
@@ -22,6 +23,9 @@ exports.sendMessage = async (req, res, next) => {
       type
     });
 
+    const currentUser = await User.findById(senderId);
+    const avatarUrl = currentUser?.avatar || '';
+
     // Emit real-time message to other participants
     const io = getIO();
     const recipients = message.conversationId.participants.filter(
@@ -32,14 +36,15 @@ exports.sendMessage = async (req, res, next) => {
       io.to(user._id.toString()).emit("receive_message", message);
     });
 
-    const receiver = recipients[0]; // Giả định hội thoại 1-1
+    const receiver = recipients[0];
     if (receiver) {
       await sendNotification({
         type: "MESSAGE",
         senderId,
         receiverId: receiver._id,
-        message: "đã gửi cho bạn một tin nhắn",
-        redirectUrl: `/inbox/${conversationId}`
+        message: `${currentUser.nameDisplay || currentUser.userName} has send you a message`,
+        redirectUrl: `/inbox/${conversationId}`,
+        avatar: avatarUrl,
       });
     }
 

@@ -45,7 +45,11 @@ const NotificationSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  avatar: {
+    type: String,
+    trim: true,
+  },
 });
 
 module.exports = mongoose.model('Notification', NotificationSchema);

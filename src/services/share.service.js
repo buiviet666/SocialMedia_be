@@ -8,6 +8,7 @@ class ShareService {
   async createShare(userId, postId, message) {
     const post = await Post.findById(postId).populate("userId", "_id");
     const userShare = await User.findById(userId);
+    const avatarUrl = userShare?.avatar || '';
     if (!post) {
       throw new Error("Post not found!");
     }
@@ -27,7 +28,8 @@ class ShareService {
         receiverId: post.userId._id,
         postId,
         message: `${userShare.nameDisplay || userShare.userName} has shared your post`,
-        redirectUrl: `/posts/${postId}`
+        redirectUrl: `/post/${postId}`,
+        avatar: avatarUrl,
       });
 
       // Emit socket to user

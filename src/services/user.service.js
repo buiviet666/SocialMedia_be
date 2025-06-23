@@ -202,6 +202,7 @@ class UserService {
       throw new AppError('You can not follow yourself!', 400);
     }
     const currentUser = await User.findById(currentUserId);
+    const avatarUrl = currentUser?.avatar || '';
     const targetUser = await User.findById(targetUserId);
     if (!targetUser) {
       throw new AppError('No user found to follow', 404);
@@ -220,7 +221,8 @@ class UserService {
       senderId: currentUserId,
       receiverId: targetUserId,
       message: `${currentUser.nameDisplay || currentUser.userName} has followed you`,
-      redirectUrl: `/profile/${currentUserId}`
+      redirectUrl: `/profile/${currentUserId}`,
+      avatar: avatarUrl,
     });
 
     // Emit socket to user
